@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Usuarios</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+
+        h1, h2 {
+            color: #333;
+        }
+
+        form {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        input, button {
+            padding: 8px;
+            margin: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background: #007bff;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        .btn-delete {
+            background: red;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Gestión de Usuarios</h1>
+
+<form id="userForm">
+    <h2>Registrar Usuario</h2>
+    <input type="text" id="name" placeholder="Nombre" required>
+    <input type="text" id="lastName" placeholder="Apellido" required>
+    <input type="text" id="identification" placeholder="Identificación" required>
+    <button type="submit">Guardar</button>
+</form>
+
+<form id="searchForm">
+    <h2>Buscar Usuario</h2>
+    <input type="text" id="searchName" placeholder="Nombre">
+    <button type="submit">Buscar</button>
+</form>
+
+<h2>Lista de Usuarios</h2>
+<table id="userTable">
+    <thead>
+    <tr>
+        <th>Nombre</th>
+        <th>Apellido</th>
+        <th>Identificación</th>
+        <th>Acciones</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script>
+    const API_URL = "http://localhost:35000/app";
+
+    document.addEventListener("DOMContentLoaded", loadUsers);
+
+    // Crear usuario
+    document.getElementById("userForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const user = {
+            name: document.getElementById("name").value,
+            lastName: document.getElementById("lastName").value,
+            identification: document.getElementById("identification").value
+        };
+
+        await fetch(API_URL, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(user)
+        });
+
+        e.target.reset();
+        loadUsers();
+    });
+
+    // Buscar usuario por nombre
+    document.getElementById("searchForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const name = document.getElementById("searchName").value.trim();
+
+        const res = await fetch(`${API_URL}?name=${encodeURIComponent(name)}`);
+        const user = await res.json();
+
+        const tbody = document.querySelector("#userTable tbody");
+        tbody.innerHTML = "";
+
+        if (user && user.name) {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${user.name}</td>
+                    <td>${user.lastName}</td>
+                    <td>${user.identification}</td>
+                    <td><button class="btn-delete" onclick="deleteUser('${user.name}')">Eliminar</button></td>
+                </tr>
+            `;
+        } else {
+            tbody.innerHTML = "<tr><td colspan='4'>No encontrado</td></tr>";
+        }
+    });
+
+    // Cargar todos los usuarios
+    async function loadUsers() {
+        const res = await fetch(API_URL);
+        const users = await res.json();
+
+        const tbody = document.querySelector("#userTable tbody");
+        tbody.innerHTML = "";
+
+        users.forEach(user => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${user.name}</td>
+                    <td>${user.lastName}</td>
+                    <td>${user.identification}</td>
+                    <td><button class="btn-delete" onclick="deleteUser('${user.name}')">Eliminar</button></td>
+                </tr>
+            `;
+        });
+    }
+
+    // Eliminar usuario
+    async function deleteUser(name) {
+        await fetch(`${API_URL}?name=${encodeURIComponent(name)}`, {
+            method: "DELETE"
+        });
+        loadUsers();
+    }
+</script>
+
+</body>
+</html>
